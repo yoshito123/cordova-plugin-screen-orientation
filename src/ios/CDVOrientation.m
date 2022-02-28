@@ -48,6 +48,21 @@
         [result addObject:[NSNumber numberWithInt:UIInterfaceOrientationLandscapeLeft]];
     }
     
+    NSString* targetOrientationString = [command argumentAtIndex:2];
+    UIInterfaceOrientation targetOrientation = UIInterfaceOrientationUnknown;
+    if(!(targetOrientationString == nil || [targetOrientationString isEqual:[NSNull null]])) {
+        if([targetOrientationString compare:@"portrait-primary"] == NSOrderedSame) {
+            targetOrientation = UIInterfaceOrientationPortrait;
+        } else if([targetOrientationString compare:@"portrait-secondary"] == NSOrderedSame) {
+            targetOrientation = UIInterfaceOrientationPortraitUpsideDown;
+        } else if([targetOrientationString compare:@"landscape-primary"] == NSOrderedSame) {
+            targetOrientation = UIInterfaceOrientationLandscapeRight;
+        } else if([targetOrientationString compare:@"landscape-secondary"] == NSOrderedSame) {
+            targetOrientation = UIInterfaceOrientationLandscapeLeft;
+        }
+    }
+
+    
     SEL selector = NSSelectorFromString(@"setSupportedOrientations:");
     
     if([vc respondsToSelector:selector]) {
@@ -61,19 +76,32 @@
                 if (!_isLocked) {
                     _lastOrientation = [UIApplication sharedApplication].statusBarOrientation;
                 }
-                UIInterfaceOrientation deviceOrientation = [UIApplication sharedApplication].statusBarOrientation;
-                if(orientationMask == 8  || (orientationMask == 12  && !UIInterfaceOrientationIsLandscape(deviceOrientation))) {
+                if(orientationMask == 8) {
                     value = [NSNumber numberWithInt:UIInterfaceOrientationLandscapeLeft];
                 } else if (orientationMask == 4){
                     value = [NSNumber numberWithInt:UIInterfaceOrientationLandscapeRight];
-                } else if (orientationMask == 1 || (orientationMask == 3 && !UIInterfaceOrientationIsPortrait(deviceOrientation))) {
+                } else if (orientationMask == 12){
+                    // 指定の向きがある場合
+                    if(targetOrientation == UIInterfaceOrientationLandscapeRight || targetOrientation == UIInterfaceOrientationLandscapeLeft){
+                        value = [NSNumber numberWithInteger:targetOrientation];
+                    } else {
+                        value = [NSNumber numberWithInt:UIInterfaceOrientationLandscapeLeft];
+                    }
+                } else if (orientationMask == 1) {
                     value = [NSNumber numberWithInt:UIInterfaceOrientationPortrait];
                 } else if (orientationMask == 2) {
                     value = [NSNumber numberWithInt:UIInterfaceOrientationPortraitUpsideDown];
+                } else if (orientationMask == 3){
+                    // 指定の向きがある場合
+                    if(targetOrientation == UIInterfaceOrientationPortrait || targetOrientation == UIInterfaceOrientationPortraitUpsideDown){
+                        value = [NSNumber numberWithInteger:targetOrientation];
+                    } else {
+                        value = [NSNumber numberWithInt:UIInterfaceOrientationPortrait];
+                    }
                 }
             } else {
                 if (_lastOrientation != UIInterfaceOrientationUnknown) {
-                    [[UIDevice currentDevice] setValue:[NSNumber numberWithInt:_lastOrientation] forKey:@"orientation"];
+                    [[UIDevice currentDevice] setValue:[NSNumber numberWithInteger:_lastOrientation] forKey:@"orientation"];
                     ((void (*)(CDVViewController*, SEL, NSMutableArray*))objc_msgSend)(vc,selector,result);
                     [UINavigationController attemptRotationToDeviceOrientation];
                 }

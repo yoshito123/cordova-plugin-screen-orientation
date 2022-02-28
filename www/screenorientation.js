@@ -42,9 +42,9 @@ if (!window.OrientationLockType) {
     };
 }
 var orientationMask = 1;
-screenOrientation.setOrientation = function (orientation) {
+screenOrientation.setOrientation = function (orientation, targetOrientation) {
     orientationMask = window.OrientationLockType[orientation];
-    cordova.exec(null, null, 'CDVOrientation', 'screenOrientation', [orientationMask, orientation]);
+    cordova.exec(null, null, 'CDVOrientation', 'screenOrientation', [orientationMask, orientation, targetOrientation]);
 };
 
 if (!screen.orientation) {
@@ -58,22 +58,22 @@ function addScreenOrientationApi (screenObject) {
         screenObject.nativeLock = screenObject.lock;
     }
 
-    screenObject.lock = function (orientation) {
+    screenObject.lock = function (orientation, targetOrientation) {
         var promiseLock;
         var p = new Promise(function (resolve, reject) {
             if (screenObject.nativeLock) {
-                promiseLock = screenObject.nativeLock(orientation);
+                promiseLock = screenObject.nativeLock(orientation, targetOrientation);
                 promiseLock.then(
                     function success (_) {
                         resolve();
                     },
                     function error (_) {
                         screenObject.nativeLock = null;
-                        resolveOrientation(orientation, resolve, reject);
+                        resolveOrientation(orientation, targetOrientation, resolve, reject);
                     }
                 );
             } else {
-                resolveOrientation(orientation, resolve, reject);
+                resolveOrientation(orientation, targetOrientation, resolve, reject);
             }
         });
         return p;
@@ -83,13 +83,13 @@ function addScreenOrientationApi (screenObject) {
     };
 }
 
-function resolveOrientation (orientation, resolve, reject) {
+function resolveOrientation (orientation, targetOrientation, resolve, reject) {
     if (!Object.prototype.hasOwnProperty.call(OrientationLockType, orientation)) {
         var err = new Error();
         err.name = 'NotSupportedError';
         reject(err); // "cannot change orientation");
     } else {
-        screenOrientation.setOrientation(orientation);
+        screenOrientation.setOrientation(orientation, targetOrientation);
         resolve('Orientation set'); // orientation change successful
     }
 }
